@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aged Care Star Ratings Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;color:#2c3e50}
+.header{background:linear-gradient(135deg,#0E8C7F 0%,#0A6B61 100%);color:#fff;padding:16px 32px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.header h1{font-size:20px;font-weight:600;letter-spacing:-0.3px}
+.header span{font-size:13px;opacity:0.85}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e8e8e8;padding:0 24px}
+.tab{padding:12px 24px;cursor:pointer;font-size:13px;font-weight:600;color:#7f8c8d;border-bottom:3px solid transparent;transition:all 0.2s}
+.tab:hover{color:#0E8C7F}
+.tab.active{color:#0E8C7F;border-bottom-color:#0E8C7F}
+.page{display:none;padding:20px 24px}
+.page.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:4px solid #0E8C7F}
+.card.green{border-left-color:#27AE60}
+.card.grey{border-left-color:#95A5A6}
+.card.red{border-left-color:#E74C3C}
+.card.gold{border-left-color:#F39C12}
+.card-label{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#95a5a6;font-weight:600;margin-bottom:6px}
+.card-value{font-size:32px;font-weight:700;color:#2c3e50;line-height:1}
+.card-sub{font-size:11px;color:#7f8c8d;margin-top:4px}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-full{grid-template-columns:1fr}
+.chart-box{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.chart-box h3{font-size:13px;font-weight:600;color:#2c3e50;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #f0f0f0}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f8f9fa;text-align:left;padding:10px 12px;font-weight:600;color:#2c3e50;border-bottom:2px solid #e8e8e8;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #f0f0f0;color:#34495e}
+tr:hover td{background:#f8fffe}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.badge-red{background:#fde8e8;color:#e74c3c}
+.badge-green{background:#e8f8f0;color:#27ae60}
+.badge-grey{background:#f0f0f0;color:#7f8c8d}
+.note-box{background:#fffdf0;border:1px solid #f0e6b8;border-radius:8px;padding:14px 18px;font-size:12px;color:#7f6e20;margin-top:16px;line-height:1.5}
+.filter-bar{display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.filter-bar label{font-size:11px;font-weight:600;color:#7f8c8d;text-transform:uppercase}
+.filter-bar select{padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff}
+canvas{max-height:320px}
+@media(max-width:768px){.chart-row{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🏥 Aged Care Star Ratings Tracker</h1>
+    <span>Australian Residential Aged Care — Quarterly Data May 2023 to May 2026</span>
+  </div>
+  <span style="font-size:11px;opacity:0.7">Source: GEN Aged Care Data | AIHW</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showPage('p1',this)">📊 National Overview</div>
+  <div class="tab" onclick="showPage('p2',this)">📈 Movement</div>
+  <div class="tab" onclick="showPage('p3',this)">⚠️ Watchlist</div>
+</div>
+
+<!-- PAGE 1 -->
+<div class="page active" id="p1">
+  <div class="cards">
+    <div class="card"><div class="card-label">Total Services</div><div class="card-value">2,590</div><div class="card-sub">May 2026 quarter</div></div>
+    <div class="card green"><div class="card-label">National Average Rating</div><div class="card-value">3.83</div><div class="card-sub">⭐ out of 5.0</div></div>
+    <div class="card gold"><div class="card-label">Services at 4+ Stars</div><div class="card-value">65.3%</div><div class="card-sub">1,695 services</div></div>
+    <div class="card red"><div class="card-label">Services at 1-2 Stars</div><div class="card-value">1</div><div class="card-sub">0.04% of rated services</div></div>
+  </div>
+  <div class="chart-row">
+    <div class="chart-box"><h3>Distribution of Overall Ratings by Quarter</h3><canvas id="distChart"></canvas></div>
+    <div class="chart-box"><h3>Average Overall Rating by State — May 2026</h3><canvas id="stateChart"></canvas></div>
+  </div>
+  <div class="chart-row chart-full">
+    <div class="chart-box"><h3>National Average Rating Trend Over Time</h3><canvas id="trendChart"></canvas></div>
+  </div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page" id="p2">
+  <div class="cards">
+    <div class="card green"><div class="card-label">Improved</div><div class="card-value" style="color:#27AE60">146</div><div class="card-sub">Rating went up from previous quarter</div></div>
+    <div class="card grey"><div class="card-label">Steady</div><div class="card-value" style="color:#95A5A6">1,670</div><div class="card-sub">No change from previous quarter</div></div>
+    <div class="card red"><div class="card-label">Declined</div><div class="card-value" style="color:#E74C3C">326</div><div class="card-sub">Rating went down from previous quarter</div></div>
+  </div>
+  <div class="chart-row">
+    <div class="chart-box"><h3>Movement Summary — May 2026 vs Previous Quarter</h3><canvas id="moveChart"></canvas></div>
+    <div class="chart-box"><h3>Rating Change Distribution</h3><canvas id="changeDistChart"></canvas></div>
+  </div>
+  <div class="chart-row chart-full">
+    <div class="chart-box">
+      <h3>Services with Biggest Rating Decline — May 2026</h3>
+      <div class="table-wrap">
+        <table id="declinersTable">
+          <thead><tr><th>Service Name</th><th>Provider</th><th>State</th><th>Previous</th><th>Current</th><th>Change</th></tr></thead>
+          <tbody id="declinersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3 -->
+<div class="page" id="p3">
+  <div class="cards">
+    <div class="card red"><div class="card-label">Watchlist Services</div><div class="card-value" style="color:#E74C3C" id="watchCount">485</div><div class="card-sub">Services rated 3 stars or below ≤ 2 stars</div></div>
+    <div class="card"><div class="card-label">Latest Quarter</div><div class="card-value" style="font-size:24px">May 2026</div><div class="card-sub">Most recent data extract</div></div>
+  </div>
+  <div class="chart-row chart-full">
+    <div class="chart-box">
+      <h3>Watchlist — Services Rated 3 Stars or Below, May 2026</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Service Name</th><th>Provider</th><th>State</th><th>Overall</th><th>Compliance</th><th>Staffing</th><th>Quality</th><th>Experience</th></tr></thead>
+          <tbody id="watchBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="note-box">
+    <strong>⚠️ Note:</strong> This watchlist shows services with an overall rating of 3 stars or below, in the selected quarter. Services may have a low rating for a variety of reasons and a low rating does not necessarily indicate poor care. This data is published by the Australian Government Department of Health and Aged Care and is publicly available on the GEN Aged Care Data website.
+  </div>
+</div>
+
+<script>
+const TEAL='#0E8C7F',TEAL_L='#E8F6F3',RED='#E74C3C',GREEN='#27AE60',GOLD='#F39C12',GREY='#95A5A6',BLUE='#2E86C1';
+const ratingColors = {1:'#E74C3C',2:'#F39C12',3:'#F1C40F',4:'#2ECC71',5:'#27AE60'};
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+// Distribution chart
+const distData = {"2023-05":{1:6,2:115,3:1356,4:970,5:54},"2023-08":{1:6,2:77,3:1168,4:1181,5:34},"2023-12":{1:4,2:47,3:984,4:1387,5:52},"2024-02":{1:3,2:40,3:850,4:1530,5:82},"2024-05":{1:1,2:25,3:736,4:1608,5:103},"2024-07":{1:1,2:19,3:667,4:1648,5:112},"2024-11":{1:1,2:16,3:604,4:1679,5:155},"2025-01":{1:2,2:12,3:574,4:1688,5:166},"2025-05":{1:1,2:8,3:552,4:1702,5:183},"2025-08":{1:1,2:6,3:514,4:1561,5:159},"2025-10":{1:1,2:4,3:467,4:1546,5:157},"2026-02":{1:1,2:3,3:464,4:1557,5:138},"2026-05":{1:1,2:0,3:484,4:1568,5:127}};
+const quarters = Object.keys(distData);
+new Chart(document.getElementById('distChart'),{
+  type:'bar',
+  data:{labels:quarters,datasets:[1,2,3,4,5].map(r=>({label:r+' Star'+(r>1?'s':''),data:quarters.map(q=>distData[q][r]||0),backgroundColor:ratingColors[r],borderRadius:2}))},
+  options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:10}}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},y:{stacked:true,grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}}
+});
+
+// State chart
+const states=[{s:'NT',v:4.00},{s:'TAS',v:3.97},{s:'ACT',v:3.92},{s:'QLD',v:3.90},{s:'NSW',v:3.88},{s:'VIC',v:3.84},{s:'WA',v:3.68},{s:'SA',v:3.67}];
+new Chart(document.getElementById('stateChart'),{
+  type:'bar',
+  data:{labels:states.map(s=>s.s),datasets:[{data:states.map(s=>s.v),backgroundColor:states.map(s=>s.v>=3.9?TEAL:s.v>=3.8?BLUE:'#E67E22'),borderRadius:4}]},
+  options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw+' ⭐'}}},scales:{x:{min:3.4,max:4.1,grid:{color:'#f0f0f0'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11,weight:'bold'}}}}}
+});
+
+// Trend chart
+const trendQ=["2023-05","2023-08","2023-12","2024-02","2024-05","2024-07","2024-11","2025-01","2025-05","2025-08","2025-10","2026-02","2026-05"];
+const trendV=[3.39,3.56,3.66,3.73,3.79,3.81,3.86,3.88,3.90,3.88,3.89,3.87,3.83];
+new Chart(document.getElementById('trendChart'),{
+  type:'line',
+  data:{labels:trendQ,datasets:[{data:trendV,borderColor:TEAL,backgroundColor:TEAL_L,fill:true,tension:0.3,pointRadius:5,pointBackgroundColor:TEAL,borderWidth:2.5}]},
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:3.2,max:4.0,grid:{color:'#f0f0f0'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:9}}}}}
+});
+
+// Movement chart
+new Chart(document.getElementById('moveChart'),{
+  type:'doughnut',
+  data:{labels:['Improved','Steady','Declined'],datasets:[{data:[146,1670,326],backgroundColor:[GREEN,GREY,RED],borderWidth:0}]},
+  options:{responsive:true,cutout:'55%',plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}}
+});
+
+// Change distribution
+new Chart(document.getElementById('changeDistChart'),{
+  type:'bar',
+  data:{labels:['-2','-1','0','+1','+2'],datasets:[{data:[8,318,1670,139,7],backgroundColor:[RED,RED,GREY,GREEN,GREEN],borderRadius:4}]},
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'#f0f0f0'}}}}
+});
+
+// Decliners table
+const decliners=[
+  {n:'Westmont Homestead',p:'Westmont Aged Care Services Limited',s:'VIC',pr:4,cr:1,ch:-3},
+  {n:'Bolton Clarke Greenview',p:'RSL Care RDNS Limited',s:'VIC',pr:4,cr:3,ch:-1},
+  {n:'Bupa Rangeville',p:'Bupa Aged Care Australia Pty Ltd',s:'QLD',pr:4,cr:3,ch:-1},
+  {n:'Langwarrin Community Aged Care',p:'Luson Aged Care Pty Ltd',s:'VIC',pr:4,cr:3,ch:-1},
+  {n:'Capecare Dunsborough',p:'Ray Village Aged Services Inc',s:'WA',pr:4,cr:3,ch:-1},
+  {n:'Ozcare Mackay',p:'Ozcare',s:'QLD',pr:4,cr:3,ch:-1},
+  {n:'Pacific Cape',p:'Great Lakes Aged & Invalid Care Association Ltd',s:'NSW',pr:4,cr:3,ch:-1},
+  {n:'Jimboomba Community Aged Care',p:'Luson Aged Care Pty Ltd',s:'QLD',pr:4,cr:3,ch:-1},
+  {n:'Estia Health Twin Waters',p:'Estia Investments Pty Ltd',s:'QLD',pr:4,cr:3,ch:-1},
+  {n:'Grand Cedar',p:'Aged Care Group Pty Ltd',s:'VIC',pr:4,cr:3,ch:-1},
+  {n:'Juniper Hayloft',p:'Uniting Church Homes',s:'WA',pr:4,cr:3,ch:-1},
+  {n:'Advantaged Care at Prestons Lodge',p:'Advantaged Care 2 Pty Limited',s:'NSW',pr:4,cr:3,ch:-1},
+  {n:'mecwacare Flora Hill',p:'MECWA Limited',s:'VIC',pr:4,cr:3,ch:-1},
+  {n:'Estia Health Mount Clear',p:'Estia Investments Pty Ltd',s:'VIC',pr:4,cr:3,ch:-1},
+  {n:'Villa Maria Catholic Homes Star of the Sea Aged Care Residence',p:'Villa Maria Catholic Homes Limited',s:'VIC',pr:4,cr:3,ch:-1},
+  {n:'Ozcare - Toowoomba',p:'Ozcare',s:'QLD',pr:4,cr:3,ch:-1},
+  {n:'Infinite Care Cornubia',p:'Infinite Aged Care (Cornubia) Pty Ltd',s:'QLD',pr:4,cr:3,ch:-1},
+  {n:'Carinity Fairfield Grange',p:'The Baptist Union of Queensland',s:'QLD',pr:4,cr:3,ch:-1},
+  {n:'Fairway Rise',p:'Southern Cross Care (Tas) Inc',s:'TAS',pr:4,cr:3,ch:-1},
+  {n:'Arcare Craigieburn',p:'Arcare Pty Ltd',s:'VIC',pr:4,cr:3,ch:-1}
+];
+const dtb=document.getElementById('declinersBody');
+decliners.forEach(d=>{
+  const cls=d.ch<=-2?'badge-red':d.ch<0?'badge-red':'badge-grey';
+  dtb.innerHTML+=`<tr><td>${d.n}</td><td>${d.p}</td><td>${d.s}</td><td>${d.pr}⭐</td><td>${d.cr}⭐</td><td><span class="badge ${cls}">${d.ch>0?'+':''}${d.ch}</span></td></tr>`;
+});
+
+// Watchlist table
+const wtb=document.getElementById('watchBody');
+const watchData=[
+{n:"Westmont Homestead",p:"Westmont Aged Care Services Limited",s:"VIC",o:1,c:1,q:3,e:4,st:3},
+{n:"Singleton Community Aged Care",p:"Luson Aged Care Pty Ltd",s:"WA",o:3,c:4,q:3,e:3,st:2},
+{n:"Tamworth Community Aged Care",p:"Luson Aged Care Pty Ltd",s:"NSW",o:3,c:4,q:3,e:4,st:1},
+{n:"Maryborough Community Aged Care",p:"Luson Aged Care Pty Ltd",s:"QLD",o:3,c:4,q:2,e:4,st:1},
+{n:"Regis Camberwell",p:"Regis Aged Care Pty Ltd",s:"VIC",o:3,c:4,q:2,e:4,st:2},
+{n:"Raelene Boyle Retirement Village",p:"Ryman Aged Care (Australia) Pty Ltd",s:"VIC",o:3,c:5,q:2,e:3,st:3},
+{n:"Bert Newton Retirement Village",p:"Ryman Aged Care (Australia) Pty Ltd",s:"VIC",o:3,c:4,q:2,e:4,st:3},
+{n:"The Queenslea",p:"Oryx Communities AP Pty Ltd",s:"WA",o:3,c:5,q:2,e:3,st:3},
+{n:"Arcare Thornlands",p:"Arcare Pty Ltd",s:"QLD",o:3,c:5,q:2,e:3,st:3},
+{n:"Estia Health Twin Waters",p:"Estia Investments Pty Ltd",s:"QLD",o:3,c:5,q:1,e:3,st:3},
+{n:"Wintringham Hobart",p:"WINTRINGHAM LIMITED",s:"TAS",o:3,c:4,q:4,e:3,st:2},
+{n:"Middle Swan Residential Care",p:"Grand Lodge of Western Australian Freemasons Homes for the Aged Inc",s:"WA",o:3,c:4,q:2,e:3,st:3},
+{n:"The Village by Scalabrini",p:"Scalabrini Village Ltd",s:"NSW",o:3,c:5,q:3,e:3,st:2},
+{n:"SwanCare Ningana",p:"SwanCare Group Inc",s:"WA",o:3,c:5,q:3,e:4,st:1},
+{n:"Aegis Murdoch",p:"Aegis Health Pty Ltd",s:"WA",o:3,c:4,q:1,e:3,st:3},
+{n:"Highfields Manor Port Macquarie",p:"Eaglecare Pty Ltd",s:"NSW",o:3,c:4,q:2,e:4,st:3},
+{n:"Romsey Community Aged Care",p:"Luson Aged Care Pty Ltd",s:"VIC",o:3,c:4,q:3,e:3,st:3},
+{n:"Langwarrin Community Aged Care",p:"Luson Aged Care Pty Ltd",s:"VIC",o:3,c:4,q:3,e:4,st:2},
+{n:"Capecare Dunsborough",p:"Ray Village Aged Services Inc",s:"WA",o:3,c:5,q:2,e:3,st:1},
+{n:"Ozcare Mackay",p:"Ozcare",s:"QLD",o:3,c:5,q:1,e:4,st:2},
+{n:"Strathpine Aged Care",p:"Strathpine Aged Care Pty Ltd",s:"QLD",o:3,c:4,q:3,e:4,st:2},
+{n:"Pacific Cape",p:"Great Lakes Aged & Invalid Care Association Ltd",s:"NSW",o:3,c:4,q:4,e:4,st:1},
+{n:"Cardinia Community Aged Care",p:"Luson Aged Care Pty Ltd",s:"VIC",o:3,c:4,q:3,e:3,st:3},
+{n:"Jimboomba Community Aged Care",p:"Luson Aged Care Pty Ltd",s:"QLD",o:3,c:4,q:2,e:4,st:2},
+{n:"Wagga Wagga Community Aged Care",p:"Luson Aged Care Pty Ltd",s:"NSW",o:3,c:4,q:2,e:3,st:3},
+{n:"Bethanie Gwelup",p:"THE BETHANIE GROUP INC",s:"WA",o:3,c:4,q:3,e:3,st:3},
+{n:"Palm Lake Care Toowoomba",p:"Palm Lake Care Operations Pty Ltd",s:"QLD",o:3,c:3,q:3,e:3,st:5},
+{n:"Bolton Clarke Greenview",p:"RSL Care RDNS Limited",s:"VIC",o:3,c:5,q:2,e:3,st:3},
+{n:"Bupa Rangeville",p:"Bupa Aged Care Australia Pty Ltd",s:"QLD",o:3,c:5,q:2,e:4,st:1},
+{n:"mecwacare Wahroonga",p:"MECWA Limited",s:"VIC",o:3,c:4,q:3,e:3,st:3}
+];
+watchData.forEach(function(w){
+  wtb.innerHTML+='<tr><td>'+w.n+'</td><td>'+w.p+'</td><td>'+w.s+'</td><td>'+w.o+'</td><td>'+w.c+'</td><td>'+w.q+'</td><td>'+w.e+'</td><td>'+w.st+'</td></tr>';
+});
+</script>
+</body>
+</html>

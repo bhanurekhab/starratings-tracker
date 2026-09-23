@@ -1,0 +1,6 @@
+Star Ratings Data Quality Issues Log
+========================================
+
+- 2023-05: 'Service Suburb' column not present — added as blank
+- 2023-08: 'Service Suburb' column not present — added as blank
+- 2023-12: 'Service Suburb' column not present — added as blank
